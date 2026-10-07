@@ -1,13 +1,23 @@
 {
-  "format_version": 1,
+  "format_version": 2,
   "tokenizer": "character",
+  "source_mode": "single-file",
+  "source": "data/input.txt",
   "source_file": "data/input.txt",
+  "source_files": 1,
   "characters": 590401,
   "train_tokens": 531360,
   "val_tokens": 59041,
   "vocab_size": 88,
   "dtype": "uint8",
   "train_fraction": 0.9,
+  "bytes_per_token": 1,
+  "train_files": [
+    "data/input.txt"
+  ],
+  "val_files": [
+    "data/input.txt"
+  ],
   "stoi": {
     "\n": 0,
     " ": 1,

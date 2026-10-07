@@ -290,7 +290,7 @@ with open(
 
 if metadata.get(
     "format_version"
-) != 1:
+) not in (1, 2):
 
     raise RuntimeError(
         "Unsupported dataset format version: "
