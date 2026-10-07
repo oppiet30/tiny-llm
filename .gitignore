@@ -20,3 +20,6 @@ checkpoint.txt
 perf-*.data
 perf-*.data.old
 
+# Generated dataset files
+data/*.bin
+

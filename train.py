@@ -1,12 +1,16 @@
 import argparse
+import json
 import os
 import platform
 import shutil
 import socket
 import time
 from datetime import datetime
+from pathlib import Path
 
+import numpy as np
 import torch
+
 from model import GPTConfig, TinyGPT
 
 
@@ -179,8 +183,8 @@ def save_checkpoint(step):
         "optimizer_state_dict":
             optimizer.state_dict(),
 
-        # Save the PyTorch RNG state so that an interrupted
-        # training run can continue the same random sequence.
+        # Save RNG state so a resumed run follows exactly
+        # the same random training sequence.
         "rng_state":
             torch.get_rng_state(),
 
@@ -217,7 +221,6 @@ def save_checkpoint(step):
         checkpoint_filename
     )
 
-    # model.pt always contains the latest checkpoint.
     shutil.copyfile(
         checkpoint_filename,
         "model.pt"
@@ -232,52 +235,137 @@ def save_checkpoint(step):
 
 
 # ---------------------------------------------------------
-# Load training text
+# Dataset files
 # ---------------------------------------------------------
 
+data_directory = Path("data")
+
+meta_file = (
+    data_directory / "meta.json"
+)
+
+train_file = (
+    data_directory / "train.bin"
+)
+
+val_file = (
+    data_directory / "val.bin"
+)
+
+
+# ---------------------------------------------------------
+# Load dataset metadata
+# ---------------------------------------------------------
+
+if not meta_file.exists():
+    raise FileNotFoundError(
+        f"{meta_file} does not exist. "
+        "Run prepare_data.py first."
+    )
+
+if not train_file.exists():
+    raise FileNotFoundError(
+        f"{train_file} does not exist. "
+        "Run prepare_data.py first."
+    )
+
+if not val_file.exists():
+    raise FileNotFoundError(
+        f"{val_file} does not exist. "
+        "Run prepare_data.py first."
+    )
+
 with open(
-    "data/input.txt",
+    meta_file,
     "r",
     encoding="utf-8"
 ) as f:
 
-    text = f.read()
-
-print(
-    f"Characters in dataset: "
-    f"{len(text):,}"
-)
+    metadata = json.load(f)
 
 
 # ---------------------------------------------------------
-# Character-level tokenizer
+# Validate metadata
 # ---------------------------------------------------------
 
-chars = sorted(
-    list(set(text))
+if metadata.get(
+    "format_version"
+) != 1:
+
+    raise RuntimeError(
+        "Unsupported dataset format version: "
+        f"{metadata.get('format_version')}"
+    )
+
+
+if metadata.get(
+    "tokenizer"
+) != "character":
+
+    raise RuntimeError(
+        "This trainer currently requires "
+        "a character-level dataset."
+    )
+
+
+vocab_size = int(
+    metadata["vocab_size"]
 )
 
-vocab_size = len(chars)
+dtype_name = metadata[
+    "dtype"
+]
 
-print(
-    f"Vocabulary size: "
-    f"{vocab_size}"
-)
+try:
+    token_dtype = np.dtype(
+        dtype_name
+    )
 
-print(
-    f"Characters: "
-    f"{repr(''.join(chars))}"
-)
+except TypeError as exc:
+    raise RuntimeError(
+        f"Unsupported token dtype: "
+        f"{dtype_name}"
+    ) from exc
 
-stoi = {
-    ch: i
-    for i, ch in enumerate(chars)
-}
+
+if token_dtype.kind != "u":
+    raise RuntimeError(
+        "Token data type must be an "
+        "unsigned integer type."
+    )
+
+
+# ---------------------------------------------------------
+# Load tokenizer
+# ---------------------------------------------------------
+
+stoi = metadata[
+    "stoi"
+]
+
+itos_list = metadata[
+    "itos"
+]
 
 itos = {
     i: ch
-    for i, ch in enumerate(chars)
+    for i, ch in enumerate(
+        itos_list
+    )
 }
+
+
+if len(stoi) != vocab_size:
+    raise RuntimeError(
+        "stoi size does not match "
+        "vocab_size."
+    )
+
+if len(itos) != vocab_size:
+    raise RuntimeError(
+        "itos size does not match "
+        "vocab_size."
+    )
 
 
 def encode(s):
@@ -289,41 +377,124 @@ def encode(s):
 
 def decode(tokens):
     return "".join(
-        itos[i]
+        itos[int(i)]
         for i in tokens
     )
 
 
-data = torch.tensor(
-    encode(text),
-    dtype=torch.long
+# ---------------------------------------------------------
+# Memory-map binary datasets
+# ---------------------------------------------------------
+
+train_data = np.memmap(
+    train_file,
+    dtype=token_dtype,
+    mode="r"
+)
+
+val_data = np.memmap(
+    val_file,
+    dtype=token_dtype,
+    mode="r"
 )
 
 
 # ---------------------------------------------------------
-# Training / validation split
+# Validate binary datasets
 # ---------------------------------------------------------
 
-n = int(
-    0.9 * len(data)
+expected_train_tokens = int(
+    metadata["train_tokens"]
 )
 
-train_data = data[:n]
-val_data = data[n:]
+expected_val_tokens = int(
+    metadata["val_tokens"]
+)
+
+
+if len(train_data) != expected_train_tokens:
+    raise RuntimeError(
+        "train.bin token count does not "
+        "match meta.json."
+    )
+
+
+if len(val_data) != expected_val_tokens:
+    raise RuntimeError(
+        "val.bin token count does not "
+        "match meta.json."
+    )
+
+
+if len(train_data) <= block_size:
+    raise RuntimeError(
+        "Training dataset is too small "
+        "for the configured block size."
+    )
+
+
+if len(val_data) <= block_size:
+    raise RuntimeError(
+        "Validation dataset is too small "
+        "for the configured block size."
+    )
+
+
+print("Dataset configuration:")
 
 print(
-    f"Training characters:   "
+    f"  Source:                "
+    f"{metadata.get('source_file', 'Unknown')}"
+)
+
+print(
+    f"  Tokenizer:             "
+    f"{metadata['tokenizer']}"
+)
+
+print(
+    f"  Vocabulary size:       "
+    f"{vocab_size}"
+)
+
+print(
+    f"  Token data type:       "
+    f"{token_dtype.name}"
+)
+
+print(
+    f"  Training tokens:       "
     f"{len(train_data):,}"
 )
 
 print(
-    f"Validation characters: "
+    f"  Validation tokens:     "
     f"{len(val_data):,}"
 )
+
+print(
+    f"  Training data bytes:   "
+    f"{train_data.nbytes:,}"
+)
+
+print(
+    f"  Validation data bytes: "
+    f"{val_data.nbytes:,}"
+)
+
+print(
+    "  Loading method:        "
+    "NumPy memory map"
+)
+
+print()
 
 
 # ---------------------------------------------------------
 # Create batches
+#
+# Only the selected batch is converted from the memory-mapped
+# token file into PyTorch int64 tensors.
 # ---------------------------------------------------------
 
 def get_batch(split):
@@ -340,17 +511,28 @@ def get_batch(split):
     )
 
     x = torch.stack([
-        source[i:i + block_size]
+        torch.from_numpy(
+            np.asarray(
+                source[
+                    int(i):
+                    int(i) + block_size
+                ]
+            ).copy()
+        )
         for i in ix
-    ])
+    ]).long()
 
     y = torch.stack([
-        source[
-            i + 1:
-            i + block_size + 1
-        ]
+        torch.from_numpy(
+            np.asarray(
+                source[
+                    int(i) + 1:
+                    int(i) + block_size + 1
+                ]
+            ).copy()
+        )
         for i in ix
-    ])
+    ]).long()
 
     return (
         x.to(device),
@@ -462,7 +644,6 @@ if args.resume is not None:
         f"{start_step:,}"
     )
 
-    # Restore RNG after model and optimizer creation.
     if "rng_state" in checkpoint:
 
         torch.set_rng_state(
@@ -509,10 +690,8 @@ else:
 # ---------------------------------------------------------
 # Estimate training and validation loss
 #
-# IMPORTANT:
-# Evaluation uses random batches. Saving/restoring the RNG
-# state prevents evaluation from changing the random sequence
-# used later by training.
+# Evaluation uses random batches. Preserve the RNG state so
+# evaluation does not alter the training random sequence.
 # ---------------------------------------------------------
 
 @torch.no_grad()
@@ -907,7 +1086,7 @@ VALUES (
     {final_train_loss:.8f},
     {final_val_loss:.8f},
     {wall_seconds:.3f},
-    'Automatically generated by train.py v2'
+    'Automatically generated by train.py v2.1 - memmap dataset'
 );
 """
 
