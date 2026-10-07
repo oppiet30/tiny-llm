@@ -16,3 +16,7 @@ venv/
 .vscode/
 .idea/
 
+checkpoint.txt
+perf-*.data
+perf-*.data.old
+
