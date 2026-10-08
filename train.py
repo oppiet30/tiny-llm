@@ -23,6 +23,20 @@ parser = argparse.ArgumentParser(
 )
 
 parser.add_argument(
+    "--data-dir",
+    type=Path,
+    default=Path("data"),
+    help="Prepared dataset directory. Default: data"
+)
+
+parser.add_argument(
+    "--checkpoint-dir",
+    type=Path,
+    default=Path("."),
+    help="Checkpoint directory. Default: current directory"
+)
+
+parser.add_argument(
     "--steps",
     type=int,
     default=10000,
@@ -52,6 +66,12 @@ parser.add_argument(
 
 args = parser.parse_args()
 
+checkpoint_directory = args.checkpoint_dir
+
+checkpoint_directory.mkdir(
+    parents=True,
+    exist_ok=True
+)
 
 # ---------------------------------------------------------
 # Validate arguments
@@ -154,7 +174,7 @@ def write_checkpoint_info(
     step
 ):
     with open(
-        "checkpoint.txt",
+        checkpoint_directory / "checkpoint.txt",
         "w",
         encoding="utf-8"
     ) as f:
@@ -216,14 +236,19 @@ def save_checkpoint(step):
         f"checkpoint-{step:08d}.pt"
     )
 
+    checkpoint_path = (
+        checkpoint_directory
+        / checkpoint_filename
+    )
+
     torch.save(
         checkpoint,
-        checkpoint_filename
+        checkpoint_path
     )
 
     shutil.copyfile(
-        checkpoint_filename,
-        "model.pt"
+        checkpoint_path,
+        checkpoint_directory / "model.pt"
     )
 
     write_checkpoint_info(
@@ -231,14 +256,14 @@ def save_checkpoint(step):
         step
     )
 
-    return checkpoint_filename
+    return checkpoint_path
 
 
 # ---------------------------------------------------------
 # Dataset files
 # ---------------------------------------------------------
 
-data_directory = Path("data")
+data_directory = args.data_dir
 
 meta_file = (
     data_directory / "meta.json"
@@ -310,6 +335,11 @@ if metadata.get(
 
 vocab_size = int(
     metadata["vocab_size"]
+)
+
+dataset_name = metadata.get(
+    "dataset_name",
+    "Unknown Dataset"
 )
 
 dtype_name = metadata[
@@ -443,6 +473,11 @@ if len(val_data) <= block_size:
 print("Dataset configuration:")
 
 print(
+    f"  Dataset:               "
+    f"{dataset_name}"
+)
+
+print(
     f"  Source:                "
     f"{metadata.get('source_file', 'Unknown')}"
 )
@@ -560,6 +595,10 @@ model = TinyGPT(
 parameter_count = sum(
     p.numel()
     for p in model.parameters()
+)
+
+model_name = (
+    f"TinyGPT-{parameter_count // 1000}K"
 )
 
 print(
@@ -774,6 +813,11 @@ print(
 )
 
 print(
+    f"  Checkpoint directory: "
+    f"{checkpoint_directory}"
+)
+
+print(
     f"  Evaluation interval: "
     f"{eval_interval:,}"
 )
@@ -955,11 +999,13 @@ print(
 )
 
 print(
-    "Latest checkpoint: model.pt"
+    f"Latest checkpoint: "
+    f"{checkpoint_directory / 'model.pt'}"
 )
 
 print(
-    "Checkpoint status: checkpoint.txt"
+    f"Checkpoint status: "
+    f"{checkpoint_directory / 'checkpoint.txt'}"
 )
 
 
@@ -1067,13 +1113,13 @@ VALUES (
         SELECT dataset_id
         FROM datasets
         WHERE name =
-        'Adventures of Huckleberry Finn'
+        {sql_string(dataset_name)}
     ),
     (
         SELECT model_id
         FROM models
         WHERE name =
-        'TinyGPT-821K'
+        {sql_string(model_name)}
     ),
     {start_step},
     {max_steps},
@@ -1102,4 +1148,3 @@ print(
     f"Benchmark SQL saved to "
     f"{sql_filename}"
 )
-

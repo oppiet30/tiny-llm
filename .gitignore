@@ -23,3 +23,12 @@ perf-*.data.old
 # Generated dataset files
 data/*.bin
 
+# Generated Gutenberg corpus
+data/gutenberg-corpus/
+
+# Prepared datasets
+data/gutenberg/*.bin
+
+# Checkpoints
+checkpoints/
+
