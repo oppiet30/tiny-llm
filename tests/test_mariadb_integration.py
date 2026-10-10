@@ -54,11 +54,11 @@ class MariaDBUploadIntegrationTests(unittest.TestCase):
 
     def tearDown(self):
         try:
-            with self.connect().cursor() as cur:
+            with self.connect() as conn, conn.cursor() as cur:
                 cur.execute("DELETE FROM benchmark_runs WHERE upload_id=%s", (self.upload_id,))
                 cur.execute("DELETE FROM datasets WHERE name=%s", (self.dataset,))
                 cur.execute("DELETE FROM models WHERE name=%s", (self.model,))
-            self.connect().commit()
+                conn.commit()
         finally:
             self.config_path.unlink(missing_ok=True)
 
@@ -84,6 +84,20 @@ class MariaDBUploadIntegrationTests(unittest.TestCase):
             self.assertEqual(self.upload_id, row[0])
             self.assertIsNotNone(row[1])
             self.assertIsNotNone(row[2])
+
+
+    def test_failed_benchmark_insert_rolls_back_new_dataset_and_model(self):
+        self.record["training_steps"] = 0  # rejected by the MariaDB CHECK constraint
+        with patch.object(benchmark_upload.socket, "gethostname", return_value=self.hostname):
+            with self.assertRaises(Exception):
+                self.upload()
+        with self.connect() as conn, conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) FROM datasets WHERE name=%s", (self.dataset,))
+            self.assertEqual(0, cur.fetchone()[0])
+            cur.execute("SELECT COUNT(*) FROM models WHERE name=%s", (self.model,))
+            self.assertEqual(0, cur.fetchone()[0])
+            cur.execute("SELECT COUNT(*) FROM benchmark_runs WHERE upload_id=%s", (self.upload_id,))
+            self.assertEqual(0, cur.fetchone()[0])
 
     def test_retry_with_same_upload_id_does_not_duplicate_run(self):
         with patch.object(benchmark_upload.socket, "gethostname", return_value=self.hostname):
