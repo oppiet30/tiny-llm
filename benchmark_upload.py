@@ -58,12 +58,25 @@ def upload_benchmark(record, config_path=CONFIG_PATH, db_host_override=None):
             )
             cursor.execute("SELECT machine_id FROM machines WHERE hostname=%s", (record["hostname"],))
             machine = cursor.fetchone()
+            cursor.execute(
+                "INSERT INTO datasets (name, vocabulary_size, notes) VALUES (%s,%s,%s) "
+                "ON DUPLICATE KEY UPDATE dataset_id=LAST_INSERT_ID(dataset_id)",
+                (record["dataset_name"], record.get("vocabulary_size"), record.get("dataset_notes")),
+            )
             cursor.execute("SELECT dataset_id FROM datasets WHERE name=%s", (record["dataset_name"],))
             dataset = cursor.fetchone()
+            cursor.execute(
+                "INSERT INTO models (name,parameter_count,n_embd,n_head,n_layer,block_size,dropout,tokenizer) "
+                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s) "
+                "ON DUPLICATE KEY UPDATE model_id=LAST_INSERT_ID(model_id)",
+                (record["model_name"], record.get("parameter_count"), record.get("n_embd"),
+                 record.get("n_head"), record.get("n_layer"), record.get("block_size"),
+                 record.get("dropout"), record.get("tokenizer", "character")),
+            )
             cursor.execute("SELECT model_id FROM models WHERE name=%s", (record["model_name"],))
             model = cursor.fetchone()
             if not (machine and dataset and model):
-                raise ValueError("Dataset or model not found; register them in MariaDB first")
+                raise RuntimeError("Could not resolve machine, dataset, and model IDs")
             cursor.execute(
                 "INSERT INTO benchmark_runs "
                 "(machine_id,dataset_id,model_id,start_step,training_steps,steps_this_run,"
