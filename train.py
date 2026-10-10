@@ -1105,6 +1105,7 @@ ON DUPLICATE KEY UPDATE
     operating_system = VALUES(operating_system);
 
 INSERT INTO benchmark_runs (
+    upload_id,
     machine_id,
     dataset_id,
     model_id,
@@ -1122,6 +1123,7 @@ INSERT INTO benchmark_runs (
     notes
 )
 VALUES (
+    ${sql_string(upload_id)},
     (
         SELECT machine_id
         FROM machines
@@ -1179,6 +1181,15 @@ if args.upload:
     benchmark_record = {
         "upload_id": upload_id,
         "notes": benchmark_notes,
+        "vocabulary_size": vocab_size,
+        "dataset_notes": f"source={metadata.get('source', '')}; source_mode={metadata.get('source_mode', '')}; train_tokens={metadata.get('train_tokens', '')}; val_tokens={metadata.get('val_tokens', '')}",
+        "parameter_count": parameter_count,
+        "n_embd": config.n_embd,
+        "n_head": config.n_head,
+        "n_layer": config.n_layer,
+        "block_size": config.block_size,
+        "dropout": config.dropout,
+        "tokenizer": metadata.get("tokenizer", "character"),
         "hostname": hostname.lower(),
         "cpu_model": cpu_model,
         "cpu_threads_available": cpu_threads_available,
