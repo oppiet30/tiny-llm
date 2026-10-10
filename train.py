@@ -1123,7 +1123,7 @@ INSERT INTO benchmark_runs (
     notes
 )
 VALUES (
-    ${sql_string(upload_id)},
+    {sql_string(upload_id)},
     (
         SELECT machine_id
         FROM machines
