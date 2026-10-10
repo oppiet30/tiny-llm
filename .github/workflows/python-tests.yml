@@ -60,4 +60,4 @@ jobs:
       - name: Apply upload ID migration
         run: mariadb -h 127.0.0.1 -uroot -pci-root-password tiny_llm_benchmarks < database/migrations/001_add_upload_id.sql
       - name: Run real MariaDB integration tests
-        run: python -m unittest tests.test_mariadb_integration -v
+        run: python -m unittest discover -s tests -p 'test_mariadb_integration.py' -v
