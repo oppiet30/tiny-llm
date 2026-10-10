@@ -1085,7 +1085,20 @@ sql_filename = (
     f"{timestamp}.sql"
 )
 
+dataset_notes = (
+    f"source={metadata.get('source', '')}; source_mode={metadata.get('source_mode', '')}; "
+    f"train_tokens={metadata.get('train_tokens', '')}; val_tokens={metadata.get('val_tokens', '')}"
+)
+
 sql = f"""USE tiny_llm_benchmarks;
+
+INSERT INTO datasets (name, vocabulary_size, notes)
+VALUES ({sql_string(dataset_name)}, {vocab_size}, {sql_string(dataset_notes)})
+ON DUPLICATE KEY UPDATE dataset_id = LAST_INSERT_ID(dataset_id);
+
+INSERT INTO models (name, parameter_count, n_embd, n_head, n_layer, block_size, dropout, tokenizer)
+VALUES ({sql_string(model_name)}, {parameter_count}, {config.n_embd}, {config.n_head}, {config.n_layer}, {config.block_size}, {config.dropout}, {sql_string(metadata.get('tokenizer', 'character'))})
+ON DUPLICATE KEY UPDATE model_id = LAST_INSERT_ID(model_id);
 
 INSERT INTO machines (
     hostname,
