@@ -62,5 +62,14 @@ jobs:
         run: mariadb -h 127.0.0.1 -uroot -pci-root-password tiny_llm_benchmarks < tests/fixtures/mariadb-schema.sql
       - name: Apply upload ID migration
         run: mariadb -h 127.0.0.1 -uroot -pci-root-password tiny_llm_benchmarks < database/migrations/001_add_upload_id.sql
+      - name: Import four anonymized benchmark fixtures
+        run: |
+          for fixture in tests/fixtures/benchmark-imports/test{1,2,3,4}.sql; do
+            mariadb -h 127.0.0.1 -uroot -pci-root-password tiny_llm_benchmarks < "$fixture"
+          done
+      - name: Verify four benchmark fixtures were imported
+        run: |
+          count=$(mariadb -N -h 127.0.0.1 -uroot -pci-root-password tiny_llm_benchmarks -e "SELECT COUNT(*) FROM benchmark_runs br JOIN machines m ON m.machine_id=br.machine_id WHERE m.hostname IN ('test1','test2','test3','test4')")
+          test "$count" -eq 4
       - name: Run real MariaDB integration tests
         run: python -m unittest discover -s tests -p 'test_mariadb_integration.py' -v
