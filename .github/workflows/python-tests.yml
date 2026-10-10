@@ -45,6 +45,7 @@ jobs:
       TINY_LLM_TEST_DB_PORT: 3306
       TINY_LLM_TEST_DB_USER: root
       TINY_LLM_TEST_DB_PASSWORD: ci-root-password
+      TINY_LLM_DB_PASSWORD: ci-root-password
       TINY_LLM_TEST_DB_NAME: tiny_llm_benchmarks
     steps:
       - name: Check out repository
