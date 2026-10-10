@@ -47,6 +47,6 @@ CREATE TABLE benchmark_runs (
 
 -- Representative metadata based on the existing Tiny LLM benchmark catalog.
 INSERT INTO datasets (name, vocabulary_size, notes)
-VALUES ('Adventures of Huckleberry Finn', 65, 'fixture=representative existing dataset');
+VALUES ('Adventures of Huckleberry Finn', NULL, 'fixture=representative existing dataset');
 INSERT INTO models (name, parameter_count, n_embd, n_head, n_layer, block_size, dropout, tokenizer)
-VALUES ('TinyGPT-821K', 821000, 128, 4, 4, 256, 0.1, 'character');
+VALUES ('TinyGPT-821K', NULL, NULL, NULL, NULL, NULL, NULL, NULL);
