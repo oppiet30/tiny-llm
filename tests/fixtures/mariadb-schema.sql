@@ -43,3 +43,10 @@ CREATE TABLE benchmark_runs (
  CONSTRAINT fk_ci_dataset FOREIGN KEY (dataset_id) REFERENCES datasets(dataset_id),
  CONSTRAINT fk_ci_model FOREIGN KEY (model_id) REFERENCES models(model_id)
 ) ENGINE=InnoDB;
+
+
+-- Representative metadata based on the existing Tiny LLM benchmark catalog.
+INSERT INTO datasets (name, vocabulary_size, notes)
+VALUES ('Adventures of Huckleberry Finn', 65, 'fixture=representative existing dataset');
+INSERT INTO models (name, parameter_count, n_embd, n_head, n_layer, block_size, dropout, tokenizer)
+VALUES ('TinyGPT-821K', 821000, 128, 4, 4, 256, 0.1, 'character');
