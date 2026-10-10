@@ -50,3 +50,8 @@ INSERT INTO datasets (name, vocabulary_size, notes)
 VALUES ('Adventures of Huckleberry Finn', NULL, 'fixture=representative existing dataset');
 INSERT INTO models (name, parameter_count, n_embd, n_head, n_layer, block_size, dropout, tokenizer)
 VALUES ('TinyGPT-821K', NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+
+INSERT INTO datasets (name, vocabulary_size, notes)
+VALUES ('Gutenberg 50 MiB Corpus', NULL, 'fixture=representative existing dataset');
+INSERT INTO models (name, parameter_count, n_embd, n_head, n_layer, block_size, dropout, tokenizer)
+VALUES ('TinyGPT-853K', NULL, NULL, NULL, NULL, NULL, NULL, NULL);
