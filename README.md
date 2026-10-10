@@ -91,3 +91,10 @@ python -m unittest discover -s tests -v
 ```
 
 These tests use a fake database connection; they verify query flow and rollback behavior but do not replace a real MariaDB integration test.
+
+## Support Tiny LLM
+
+Tiny LLM is free and open source. Optional sponsorships help cover domain renewal, website hosting, and continued development.
+
+[Support Tiny LLM on GitHub Sponsors](https://github.com/sponsors/oppiet30)
+
