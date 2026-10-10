@@ -12,7 +12,7 @@ def load_config(path=CONFIG_PATH):
         raise ValueError("Upload configuration must be a JSON object")
     return config
 
-def upload_benchmark(record, config_path=CONFIG_PATH):
+def upload_benchmark(record, config_path=CONFIG_PATH, db_host_override=None):
     config = load_config(config_path)
     hostname = socket.gethostname().split(".")[0].lower()
     # Per-host opt-in; Euclid has no direct MariaDB connection.
@@ -24,7 +24,7 @@ def upload_benchmark(record, config_path=CONFIG_PATH):
     if record["hostname"].lower() != hostname:
         raise ValueError("Benchmark hostname does not match this machine")
 
-    db_host = config.get("host")
+    db_host = db_host_override or config.get("host")
     db_user = os.environ.get("TINY_LLM_DB_USER")
     db_password = os.environ.get("TINY_LLM_DB_PASSWORD")
     if not db_host or not db_user or not db_password:
