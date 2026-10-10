@@ -25,7 +25,7 @@ def upload_benchmark(record, config_path=CONFIG_PATH, db_host_override=None):
         raise ValueError("Benchmark hostname does not match this machine")
 
     db_host = db_host_override or config.get("host")
-    db_user = os.environ.get("TINY_LLM_DB_USER")
+    db_user = os.environ.get("TINY_LLM_DB_USER") or config.get("db_user")
     db_password = os.environ.get("TINY_LLM_DB_PASSWORD")
     if not db_host or not db_user or not db_password:
         raise ValueError("Configure database host and TINY_LLM_DB_USER/TINY_LLM_DB_PASSWORD")
