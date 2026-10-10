@@ -32,3 +32,6 @@ data/gutenberg/*.bin
 # Checkpoints
 checkpoints/
 
+
+# Local benchmark upload settings and credentials
+benchmark-upload.local.json
