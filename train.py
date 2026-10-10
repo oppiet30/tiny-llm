@@ -1091,6 +1091,7 @@ dataset_notes = (
 )
 
 sql = f"""USE tiny_llm_benchmarks;
+START TRANSACTION;
 
 INSERT INTO datasets (name, vocabulary_size, notes)
 VALUES ({sql_string(dataset_name)}, {vocab_size}, {sql_string(dataset_notes)})
@@ -1167,7 +1168,10 @@ VALUES (
     {final_val_loss:.8f},
     {wall_seconds:.3f},
     {sql_string(benchmark_notes)}
-);
+)
+ON DUPLICATE KEY UPDATE run_id = LAST_INSERT_ID(run_id);
+
+COMMIT;
 """
 
 with open(
