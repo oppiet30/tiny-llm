@@ -43,7 +43,7 @@ def upload_benchmark(record, config_path=CONFIG_PATH, db_host_override=None):
     )
     try:
         with connection.cursor() as cursor:
-            cursor.execute("SELECT run_id FROM benchmark_runs WHERE notes = %s LIMIT 1", (record["notes"],))
+            cursor.execute("SELECT run_id FROM benchmark_runs WHERE upload_id = %s LIMIT 1", (record["upload_id"],))
             previous = cursor.fetchone()
             if previous:
                 return ("already_present", previous[0])
