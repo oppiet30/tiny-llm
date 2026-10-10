@@ -1,4 +1,5 @@
 # tiny-llm
+[![Python checks](https://github.com/oppiet30/tiny-llm/actions/workflows/python-tests.yml/badge.svg)](https://github.com/oppiet30/tiny-llm/actions/workflows/python-tests.yml)
 A tiny LLM for testing and playing with.
 
 ```
