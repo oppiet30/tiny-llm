@@ -53,7 +53,7 @@ mariadb -h 192.168.1.100 -u YOUR_ADMIN_USER -p tiny_llm_benchmarks < database/mi
 
 Replace the sample address with the MariaDB server IP. This migration adds a nullable `upload_id` column and a unique index; existing benchmark rows remain valid.
 
-With `--upload`, the uploader now creates a missing dataset row (including its vocabulary size and source/token-count notes) and a missing model row (including parameter count and architecture metadata) inside the same transaction as the benchmark run. Existing dataset/model names are reused rather than duplicated. Register the correct dataset name in `data/meta.json`; the trainer uses that name as the dataset identity.
+With `--upload`, the uploader creates a missing dataset row (including its vocabulary size and source/token-count notes) and a missing model row (including parameter count and architecture metadata) inside the same transaction as the benchmark run. Existing dataset/model names are reused rather than duplicated. Register the correct dataset name in `data/meta.json`; the trainer uses that name as the dataset identity.
 
 The generated SQL fallback also registers the dataset/model, wraps the writes in a transaction, and uses the same unique `upload_id` for idempotent imports. Thus importing the fallback after a successful direct upload will not create a second benchmark run.
 
