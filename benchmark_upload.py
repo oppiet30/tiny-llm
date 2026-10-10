@@ -79,11 +79,11 @@ def upload_benchmark(record, config_path=CONFIG_PATH, db_host_override=None):
                 raise RuntimeError("Could not resolve machine, dataset, and model IDs")
             cursor.execute(
                 "INSERT INTO benchmark_runs "
-                "(machine_id,dataset_id,model_id,start_step,training_steps,steps_this_run,"
+                "(upload_id,machine_id,dataset_id,model_id,start_step,training_steps,steps_this_run,"
                 "batch_size,learning_rate,pytorch_version,pytorch_threads,interop_threads,"
                 "train_loss,validation_loss,real_seconds,notes) "
-                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                (machine[0],dataset[0],model[0],record["start_step"],
+                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                (record["upload_id"],machine[0],dataset[0],model[0],record["start_step"],
                  record["training_steps"],record["steps_this_run"],
                  record["batch_size"],record["learning_rate"],
                  record["pytorch_version"],record["pytorch_threads"],
