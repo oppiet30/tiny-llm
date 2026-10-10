@@ -1,0 +1,13 @@
+{
+  "enabled": false,
+  "host": "192.168.1.100",
+  "port": 3306,
+  "database": "tiny_llm_benchmarks",
+  "db_user": "tiny_llm_writer",
+  "allowed_hosts": [
+    "dell",
+    "optiplex-3040",
+    "mini",
+    "raspberrypi"
+  ]
+}
