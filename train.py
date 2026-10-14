@@ -114,7 +114,8 @@ eval_interval = 250
 learning_rate = 3e-4
 eval_iters = 10
 
-device = "cpu"
+device = "cuda" if torch.cuda.is_available() else "cpu"
+print(f"Training device: {device}")
 
 torch.manual_seed(1337)
 
