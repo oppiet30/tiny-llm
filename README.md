@@ -41,6 +41,40 @@ unset TINY_LLM_DB_PASSWORD
 The password prompt does not echo your password or include it in the shell command history. `benchmark_upload.py` reads `TINY_LLM_DB_PASSWORD` from the environment; the password is not stored in the local JSON configuration or SQL fallback. Replace the example username with your MariaDB writer account. Never commit credentials to Git. On Linux, environment variables may be accessible to processes with sufficient privileges, so unset the password after use.
 
 
+## Windows CPU installation (including 4 GB RAM)
+
+On Windows, use a supported 64-bit Python version and PowerShell. The main
+`requirements.txt` currently pins Linux/CUDA-oriented dependencies; **do not**
+install that file on Windows. Install CPU-compatible PyTorch and NumPy instead,
+using the [official PyTorch installer](https://pytorch.org/get-started/locally/)
+if you need a specific build.
+
+```powershell
+git clone https://github.com/oppiet30/tiny-llm.git
+cd tiny-llm
+py -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --upgrade pip
+.\.venv\Scripts\python.exe -m pip install torch numpy
+```
+
+Provide a UTF-8 training text file at `data/input.txt` (large enough to
+produce training and validation splits longer than 128 tokens), then:
+
+```powershell
+.\.venv\Scripts\python.exe prepare_data.py
+.\.venv\Scripts\python.exe train.py --steps 100 --threads 2 --batch-size 4 --device cpu
+```
+
+For a 4 GB Ryzen 3 laptop, start with batch size 4 and two CPU threads.
+Close memory-intensive programs and keep the Windows page file enabled.
+Smaller batches reduce activation memory, but do not guarantee that training
+will fit on every machine. The Radeon integrated GPU is not CUDA-compatible.
+
+These CLI options also work on Linux. The default remains batch size 16 and
+automatic CUDA/CPU selection. Checkpointing and MariaDB benchmark recording
+remain available; changing batch size between resumed runs changes training
+behavior.
+
 ## Optional MariaDB benchmark upload
 
 Training always writes a SQL fallback file under `benchmarks/`. Direct database upload is **off unless you pass `--upload`**.
