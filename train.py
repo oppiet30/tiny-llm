@@ -71,6 +71,20 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--batch-size",
+    type=int,
+    default=16,
+    help="Training examples per batch. Default: 16; try 4 on low-memory PCs."
+)
+
+parser.add_argument(
+    "--device",
+    choices=("auto", "cpu", "cuda"),
+    default="auto",
+    help="Training device. Default: auto (CUDA if available, otherwise CPU)."
+)
+
+parser.add_argument(
     "--threads",
     type=int,
     default=None,
@@ -96,6 +110,12 @@ if args.steps < 1:
 if args.checkpoint_interval < 1:
     parser.error("--checkpoint-interval must be at least 1")
 
+if args.batch_size < 1:
+    parser.error("--batch-size must be at least 1")
+
+if args.device == "cuda" and not torch.cuda.is_available():
+    parser.error("--device cuda requested but CUDA is unavailable")
+
 if args.threads is not None and args.threads < 1:
     parser.error("--threads must be at least 1")
 
@@ -104,7 +124,7 @@ if args.threads is not None and args.threads < 1:
 # Training configuration
 # ---------------------------------------------------------
 
-batch_size = 16
+batch_size = args.batch_size
 block_size = 128
 
 max_steps = args.steps
@@ -114,7 +134,7 @@ eval_interval = 250
 learning_rate = 3e-4
 eval_iters = 10
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+device = ("cuda" if torch.cuda.is_available() else "cpu") if args.device == "auto" else args.device
 print(f"Training device: {device}")
 
 torch.manual_seed(1337)
