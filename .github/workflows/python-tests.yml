@@ -39,10 +39,16 @@ jobs:
         run: |
           python train.py --help
           if ($LASTEXITCODE -ne 0) { exit 1 }
-          python train.py --batch-size 0 --steps 1
-          if ($LASTEXITCODE -eq 0) { throw "Invalid batch size was accepted" }
-          python train.py --device cuda --steps 1
-          if ($LASTEXITCODE -eq 0) { throw "Unavailable CUDA device was accepted" }
+          # Native process failures are expected for these invalid inputs.
+          # PowerShell 7 can turn native stderr into a terminating error;
+          # temporarily disable that behavior while checking exit codes.
+          $ErrorActionPreference = 'Continue'
+          python train.py --batch-size 0 --steps 1 2>&1 | Out-Null
+          $batchExit = $LASTEXITCODE
+          python train.py --device cuda --steps 1 2>&1 | Out-Null
+          $cudaExit = $LASTEXITCODE
+          if ($batchExit -eq 0) { throw "Invalid batch size was accepted" }
+          if ($cudaExit -eq 0) { throw "Unavailable CUDA device was accepted" }
       - name: Windows training smoke test
         shell: pwsh
         run: |
