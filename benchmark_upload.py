@@ -49,12 +49,13 @@ def upload_benchmark(record, config_path=CONFIG_PATH, db_host_override=None):
                 return ("already_present", previous[0])
 
             cursor.execute(
-                "INSERT INTO machines (hostname,cpu_model,cpu_threads,operating_system) "
-                "VALUES (%s,%s,%s,%s) ON DUPLICATE KEY UPDATE "
-                "cpu_model=VALUES(cpu_model), cpu_threads=VALUES(cpu_threads), "
+                "INSERT INTO machines (hostname,cpu_model,cpu_cores,cpu_threads,ram_mb,operating_system) "
+                "VALUES (%s,%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE "
+                "cpu_model=VALUES(cpu_model), cpu_cores=COALESCE(VALUES(cpu_cores),cpu_cores), "
+                "cpu_threads=VALUES(cpu_threads), ram_mb=COALESCE(VALUES(ram_mb),ram_mb), "
                 "operating_system=VALUES(operating_system)",
-                (record["hostname"],record["cpu_model"],
-                 record["cpu_threads_available"],record["operating_system"]),
+                (record["hostname"],record["cpu_model"],record.get("cpu_cores"),
+                 record["cpu_threads_available"],record.get("ram_mb"),record["operating_system"]),
             )
             cursor.execute("SELECT machine_id FROM machines WHERE hostname=%s", (record["hostname"],))
             machine = cursor.fetchone()

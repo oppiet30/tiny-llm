@@ -1116,18 +1116,24 @@ ON DUPLICATE KEY UPDATE model_id = LAST_INSERT_ID(model_id);
 INSERT INTO machines (
     hostname,
     cpu_model,
+    cpu_cores,
     cpu_threads,
+    ram_mb,
     operating_system
 )
 VALUES (
     {sql_string(hostname)},
     {sql_string(cpu_model)},
-    {cpu_threads_available},
+    {cpu_cores if cpu_cores is not None else "NULL"},
+    {cpu_threads_available if cpu_threads_available is not None else "NULL"},
+    {round(ram_bytes / (1024 * 1024)) if ram_bytes is not None else "NULL"},
     {sql_string(operating_system)}
 )
 ON DUPLICATE KEY UPDATE
     cpu_model = VALUES(cpu_model),
+    cpu_cores = COALESCE(VALUES(cpu_cores), cpu_cores),
     cpu_threads = VALUES(cpu_threads),
+    ram_mb = COALESCE(VALUES(ram_mb), ram_mb),
     operating_system = VALUES(operating_system);
 
 INSERT INTO benchmark_runs (
@@ -1221,6 +1227,8 @@ if args.upload:
         "tokenizer": metadata.get("tokenizer", "character"),
         "hostname": hostname.lower(),
         "cpu_model": cpu_model,
+        "cpu_cores": cpu_cores,
+        "ram_mb": round(ram_bytes / (1024 * 1024)) if ram_bytes is not None else None,
         "cpu_threads_available": cpu_threads_available,
         "operating_system": operating_system,
         "dataset_name": dataset_name,
