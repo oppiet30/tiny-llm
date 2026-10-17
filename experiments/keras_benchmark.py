@@ -9,6 +9,9 @@ os.environ["KERAS_BACKEND"] = "torch"
 import argparse
 import json
 import time
+import socket
+import platform
+import uuid
 from pathlib import Path
 
 import numpy as np
@@ -62,6 +65,8 @@ def main():
     p.add_argument("--steps", type=int, default=100)
     p.add_argument("--batch-size", type=int, default=4)
     p.add_argument("--threads", type=int, default=2)
+    p.add_argument("--upload", action="store_true", help="Upload results to MariaDB")
+    p.add_argument("--db-host", default=None, help="MariaDB host override")
     args = p.parse_args()
     if min(args.steps, args.batch_size, args.threads) < 1:
         p.error("steps, batch-size and threads must be positive")
@@ -112,6 +117,47 @@ def main():
     print(f"Train loss: {final_loss:.4f}; validation batch loss: {val_loss:.4f}")
     print("Note: Keras uses untied output embeddings; parameter count differs from PyTorch.")
     print("This is an exploratory benchmark, not an apples-to-apples speed comparison.")
+
+    if args.upload:
+        from benchmark_upload import upload_benchmark
+        from hardware_info import detect_hardware
+
+        hardware = detect_hardware()
+        ram_bytes = hardware.get("ram_bytes")
+        backend = keras.backend.backend()
+        record = {
+            "upload_id": str(uuid.uuid4()),
+            "hostname": socket.gethostname().split(".")[0].lower(),
+            "cpu_model": hardware.get("cpu_model") or "Unknown",
+            "cpu_cores": hardware.get("cpu_cores"),
+            "cpu_threads_available": os.cpu_count(),
+            "ram_mb": round(ram_bytes / (1024 * 1024)) if ram_bytes is not None else None,
+            "operating_system": platform.platform(),
+            "dataset_name": meta.get("dataset_name") or "Unknown Dataset",
+            "vocabulary_size": int(meta["vocab_size"]),
+            "dataset_notes": f"source={meta.get('source', '')}; source_mode={meta.get('source_mode', '')}",
+            "model_name": f"TinyKerasGPT-{parameters // 1000}K-keras3-{backend}",
+            "parameter_count": parameters,
+            "n_embd": 128, "n_head": 4, "n_layer": 4,
+            "block_size": block, "dropout": 0.1, "tokenizer": "character",
+            "start_step": 0, "training_steps": args.steps, "steps_this_run": args.steps,
+            "batch_size": args.batch_size, "learning_rate": 3e-4,
+            "pytorch_version": torch.__version__,
+            "pytorch_threads": torch.get_num_threads(),
+            "interop_threads": torch.get_num_interop_threads(),
+            "train_loss": final_loss, "validation_loss": val_loss,
+            "real_seconds": seconds,
+            "notes": (
+                f"Keras {keras.__version__}; backend={backend}; "
+                "single validation batch; untied embeddings; exploratory comparison"
+            ),
+        }
+        try:
+            status, run_id = upload_benchmark(record, db_host_override=args.db_host)
+            print(f"MariaDB benchmark {status}: run #{run_id}")
+        except Exception as exc:
+            print(f"WARNING: benchmark upload failed: {exc}")
+            print("Training succeeded; database upload did not complete.")
 
 
 if __name__ == "__main__":
