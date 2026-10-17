@@ -62,6 +62,7 @@ class TinyKerasGPT(keras.Model):
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--data-dir", type=Path, default=Path("data"))
+    p.add_argument("--dataset-name", default=None, help="Override dataset display name for upload")
     p.add_argument("--steps", type=int, default=100)
     p.add_argument("--batch-size", type=int, default=4)
     p.add_argument("--threads", type=int, default=2)
@@ -101,7 +102,10 @@ def main():
     model(x)  # Build outside timing
     parameters = model.count_params()
     print(f"Backend: {keras.backend.backend()}; parameters: {parameters:,}")
-    print(f"Dataset: {meta.get('dataset_name', meta.get('source_file', 'Unknown'))}")
+    dataset_name = args.dataset_name or meta.get("dataset_name")
+    if args.upload and not dataset_name:
+        p.error("Dataset name missing from meta.json; supply --dataset-name before uploading")
+    print(f"Dataset: {dataset_name or meta.get('source_file', 'Unknown')}")
     print(f"Steps: {args.steps}; batch: {args.batch_size}; threads: {args.threads}")
     started = time.perf_counter()
     final_loss = None
@@ -135,7 +139,7 @@ def main():
             "cpu_threads_available": os.cpu_count(),
             "ram_mb": round(ram_bytes / (1024 * 1024)) if ram_bytes is not None else None,
             "operating_system": platform.platform(),
-            "dataset_name": meta.get("dataset_name") or "Unknown Dataset",
+            "dataset_name": dataset_name,
             "vocabulary_size": int(meta["vocab_size"]),
             "dataset_notes": f"source={meta.get('source', '')}; source_mode={meta.get('source_mode', '')}",
             "model_name": f"TinyKerasGPT-{parameters // 1000}K-keras3-{backend}",
