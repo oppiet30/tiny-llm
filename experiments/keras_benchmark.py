@@ -119,6 +119,8 @@ def main():
     print("This is an exploratory benchmark, not an apples-to-apples speed comparison.")
 
     if args.upload:
+        import sys
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
         from benchmark_upload import upload_benchmark
         from hardware_info import detect_hardware
 
