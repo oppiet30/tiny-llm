@@ -38,3 +38,22 @@ Unlike `train.py`, this experimental runner does not generate a SQL fallback
 file. If upload fails, training still completes, but you must rerun with
 `--upload` to record another benchmark. The earlier benchmark run is not
 backfilled automatically.
+
+## Dataset identification
+
+Newly prepared datasets accept an explicit display name:
+
+```bash
+python prepare_data.py --input data/input.txt --output-dir data/huckleberry --dataset-name "Adventures of Huckleberry Finn"
+```
+
+For an existing prepared dataset, there is no need to regenerate the binary files.
+Supply the dataset name to the Keras runner instead:
+
+```bash
+python experiments/keras_benchmark.py --data-dir data/huckleberry --dataset-name "Adventures of Huckleberry Finn" --steps 100 --batch-size 4 --threads 2 --upload
+```
+
+When uploading, the runner refuses to use an unnamed dataset rather than
+creating an `Unknown Dataset` entry. Existing database records are not
+changed by this fix.

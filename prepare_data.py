@@ -40,6 +40,13 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--dataset-name",
+    type=str,
+    default=None,
+    help="Human-readable dataset name to store in meta.json."
+)
+
+parser.add_argument(
     "--train-fraction",
     type=float,
     default=0.90,
@@ -716,6 +723,8 @@ else:
 
 metadata = {
     "format_version": 2,
+
+    "dataset_name": args.dataset_name or (source_files[0].stem if source_mode == "single-file" else args.input_dir.name),
 
     "tokenizer":
         "character",
